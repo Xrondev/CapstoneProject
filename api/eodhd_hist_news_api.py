@@ -1,3 +1,7 @@
+"""
+Functions for getting the historical news, given the stock symbols
+"""
+
 import requests
 from utils import read_config, write_json
 
