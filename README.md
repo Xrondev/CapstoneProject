@@ -5,6 +5,8 @@ Under construction
 
 
 ## file structure
+> <p>treer -i "/.idea|.venv|.git|__pycache__/"</p>
+> # use this command to generate file structure, Node required.
 ```
 .
 ├─config.ini
