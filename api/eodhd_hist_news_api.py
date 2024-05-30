@@ -6,10 +6,12 @@ import requests
 from utils import read_config, write_json
 
 
-def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, offset=0, save=True) -> list:
+def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, offset=0, save=True,
+                        exchange_id: str = 'US') -> list:
     """
     Get historical news of given symbol, https://eodhd.com/financial-apis/stock-market-financial-news-api/
 
+    :param exchange_id: exchange id, default US
     :param symbol: stock symbol
     :param from_date: start date, format: 'YYYY-MM-DD'
     :param to_date: end date
@@ -24,7 +26,7 @@ def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, off
 
     config = read_config()
     token = config['TOKEN']['eodhd_token']
-    url = f'https://eodhd.com/api/news?s={symbol}&from={from_date}&to={to_date}&offset={offset}&limit={limit}&api_token={token}&fmt=json'
+    url = f'https://eodhd.com/api/news?s={symbol}.{exchange_id}&from={from_date}&to={to_date}&offset={offset}&limit={limit}&api_token={token}&fmt=json'
     data = requests.get(url).json()
     if save:
         write_json(data, f'news_{symbol.replace(".", "_")}_{from_date}_{to_date}.json', 'data/json_eodhd')
