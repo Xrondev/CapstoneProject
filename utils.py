@@ -64,4 +64,30 @@ def get_symbol_name_dict() -> dict:
         symbol = tds[2].xpath('a')[0].text
         result[symbol] = name
     print(result)
+
+    write_json(result, 'nasdaq100_symbol_name.json', 'data/')
     return result
+
+
+def from_json(filename: str, relative_path: str = 'data/json_eodhd') -> dict:
+    """
+    Read data from a json file under project root and given relative path
+    :param filename: filename, ends with .json
+    :param relative_path: path relative to project root
+    :return: json data
+    """
+
+    import json
+    import os
+
+    project_root = os.path.dirname(__file__)
+
+    with open(os.path.join(project_root, relative_path, filename), 'r') as f:
+        data = json.load(f)
+    return data
+
+
+if __name__ == '__main__':
+    # read_config()
+    # write_json({'a': 1, 'b': 2}, 'test.json')
+    get_symbol_name_dict()
