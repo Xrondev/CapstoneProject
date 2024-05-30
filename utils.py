@@ -7,12 +7,18 @@ import os
 
 from lxml import etree
 
+config = None
 
 def read_config() -> configparser.ConfigParser:
     """
     Read the config file and return the config object
     :return:
     """
+    global config
+
+    if config:
+        return config
+
     config = configparser.ConfigParser()
     config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
     # print(config.sections())

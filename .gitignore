@@ -3,5 +3,6 @@
 .venv
 
 /data/csv_eodhd/
+/data/json_eodhd/
 *.json
 *.pyc
