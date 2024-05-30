@@ -3,6 +3,8 @@ Useful functions for the project
 """
 
 import configparser
+import os
+
 from lxml import etree
 
 
@@ -12,8 +14,13 @@ def read_config() -> configparser.ConfigParser:
     :return:
     """
     config = configparser.ConfigParser()
-    config.read('./config.ini')
-    print(config.sections())
+    config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
+    # print(config.sections())
+    # convert date to timestamp
+    import datetime
+    for key in config['DATE']:
+        config['DATE'][key] = str(datetime.datetime.strptime(config['DATE'][key], '%Y-%m-%d').timestamp())
+
     return config
 
 

@@ -13,16 +13,13 @@ def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, off
 
     :param exchange_id: exchange id, default US
     :param symbol: stock symbol
-    :param from_date: start date, format: 'YYYY-MM-DD'
+    :param from_date: start date, should be configured in config.ini, read from config and util will convert it into timestamp
     :param to_date: end date
     :param limit: number of news to get, default 50
     :param offset: offset of the news, default 0
     :param save: if true save to json file, default true, under {project root}/data/json_eodhd
     :return: a list of news
     """
-    import re
-    if not re.match(r'\d{4}-\d{2}-\d{2}', from_date) or not re.match(r'\d{4}-\d{2}-\d{2}', to_date):
-        raise ValueError('Date format should be YYYY-MM-DD')
 
     config = read_config()
     token = config['TOKEN']['eodhd_token']
