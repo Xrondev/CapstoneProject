@@ -27,11 +27,11 @@ def d():
     # get historical intraday price data
     for symbol, name in stock_list.items():
         cnt += 1
+
         print(f'[{cnt}/{len(stock_list)}] Getting data for {symbol}...')
         if data_partition['price']:
             get_historical_intraday_price(symbol, from_date, to_date, save=True)
         if data_partition['news']:
-            # todo The limit the max 1000, iterate through the date range to get all news
             get_historical_news(symbol, from_date, to_date, save=True, limit=1000)
         if data_partition['fundamental']:
             get_fundamental(symbol, save=True)

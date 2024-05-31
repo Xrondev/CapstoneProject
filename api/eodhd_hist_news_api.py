@@ -4,6 +4,7 @@ Functions for getting the historical news, given the stock symbols
 import json
 import os
 import datetime
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
@@ -57,8 +58,13 @@ def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, off
         date_ranges.append((current_date_dt.strftime('%Y-%m-%d'), end_date_dt.strftime('%Y-%m-%d')))
         current_date_dt = next_month_dt
 
+    # Rate limiting parameters
+    max_requests_per_minute = 200
+    request_count = 0
+    start_time = time.time()
+
     # Fetch news data using multithreading
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
             executor.submit(fetch_news_for_period, symbol, exchange_id, start, end, offset, limit, token)
             for start, end in date_ranges
@@ -69,10 +75,20 @@ def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, off
             if news_data:
                 all_news.extend(news_data)
 
-    # Sort news by timestamp
+            # rate limiting
+            request_count += 1
+            if request_count >= max_requests_per_minute:
+                elapsed_time = time.time() - start_time
+                if elapsed_time < 60:
+                    time_to_sleep = 60 - elapsed_time
+                    print(f"!!!!!Hit RATE LIMIT. Sleeping for {time_to_sleep} seconds.")
+                    time.sleep(time_to_sleep)
+                # Reset count and start time
+                request_count = 0
+                start_time = time.time()
+
     all_news.sort(key=lambda x: x['date'])
 
-    # Save data if requested
     if save:
         os.makedirs('../data/json_eodhd/news/', exist_ok=True)
         f_d = from_date_dt.strftime('%Y-%m-%d')
