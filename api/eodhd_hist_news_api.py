@@ -1,6 +1,7 @@
 """
 Functions for getting the historical news, given the stock symbols
 """
+import os
 
 import requests
 from utils import read_config, write_json
@@ -23,10 +24,21 @@ def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, off
 
     config = read_config()
     token = config['TOKEN']['eodhd_token']
-    url = f'https://eodhd.com/api/news?s={symbol}.{exchange_id}&from={from_date}&to={to_date}&offset={offset}&limit={limit}&api_token={token}&fmt=json'
-    data = requests.get(url).json()
+    url = f'https://eodhd.com/api/news?s={symbol}.{exchange_id}&from={from_date}&to={to_date}&offset={offset}&limit={limit}&api_token={token}&fmt=csv'
+    data = requests.get(url)
     if save:
-        write_json(data, f'news_{symbol.replace(".", "_")}_{from_date}_{to_date}.json', 'data/json_eodhd')
+        # write_json(data, f'news_{symbol.replace(".", "_")}_{from_date}_{to_date}.json', 'data/json_eodhd')
+        os.makedirs('../data/csv_eodhd/news/', exist_ok=True)
+        # csv save
+        if data.status_code == 200:
+            import datetime
+            # turn to yyyy-mm-dd
+            f_d = datetime.datetime.fromtimestamp(float(from_date)).strftime('%Y-%m-%d')
+            t_d = datetime.datetime.fromtimestamp(float(to_date)).strftime('%Y-%m-%d')
+            with open(f'../data/csv_eodhd/news/news_{symbol.replace(".", "_")}_{f_d}_{t_d}.csv',
+                      'wb') as f:
+                f.write(data.content)
+                print(f'{symbol} historical news written')
     return data
 
 

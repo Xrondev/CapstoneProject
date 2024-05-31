@@ -5,9 +5,16 @@ Download different data here
 2. historical news data
 3. historical volume data
 """
-
+from api.eodhd_hist_news_api import get_historical_news
 from api.eodhd_hist_price_api import get_historical_intraday_price
+from api.eodhd_fundamental_api import get_fundamental
 from utils import read_config, from_json
+
+data_partition = {
+    'price': False,
+    'news': False,
+    'fundamental': True,
+}
 
 
 def d():
@@ -17,9 +24,13 @@ def d():
 
     # get historical intraday price data
     for symbol, name in from_json('nasdaq100_symbol_name.json', './data').items():
-        print('Historical intraday price data for', symbol, ':', name)
-        get_historical_intraday_price(symbol, from_date, to_date, save=True)
-
+        if data_partition['price']:
+            get_historical_intraday_price(symbol, from_date, to_date, save=True)
+        if data_partition['news']:
+            # todo The limit the max 1000, iterate through the date range to get all news
+            get_historical_news(symbol, from_date, to_date, save=True, limit=1000)
+        if data_partition['fundamental']:
+            get_fundamental(symbol, save=True)
 
 
 if __name__ == '__main__':
