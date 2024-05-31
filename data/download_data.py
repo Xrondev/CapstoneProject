@@ -12,8 +12,8 @@ from utils import read_config, from_json
 
 data_partition = {
     'price': False,
-    'news': False,
-    'fundamental': True,
+    'news': True,
+    'fundamental': False,
 }
 
 
@@ -22,8 +22,12 @@ def d():
     from_date = config['DATE']['from']
     to_date = config['DATE']['to']
 
+    stock_list = from_json('nasdaq100_symbol_name.json', './data')
+    cnt = 0
     # get historical intraday price data
-    for symbol, name in from_json('nasdaq100_symbol_name.json', './data').items():
+    for symbol, name in stock_list.items():
+        cnt += 1
+        print(f'[{cnt}/{len(stock_list)}] Getting data for {symbol}...')
         if data_partition['price']:
             get_historical_intraday_price(symbol, from_date, to_date, save=True)
         if data_partition['news']:

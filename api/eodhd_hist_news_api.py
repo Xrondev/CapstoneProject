@@ -1,8 +1,12 @@
 """
 Functions for getting the historical news, given the stock symbols
 """
+import json
 import os
+import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from tqdm import tqdm
 import requests
 from utils import read_config, write_json
 
@@ -22,24 +26,62 @@ def get_historical_news(symbol: str, from_date: str, to_date: str, limit=50, off
     :return: a list of news
     """
 
+    def fetch_news_for_period(symbol, exchange_id, start_date, end_date, offset, limit, token):
+        url = f'https://eodhd.com/api/news?s={symbol}.{exchange_id}&from={start_date}&to={end_date}&offset={offset}&limit={limit}&api_token={token}&fmt=json'
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(
+                f'Error getting news for {symbol} from {start_date} to {end_date}, status code: {response.status_code}')
+            return []
+
     config = read_config()
     token = config['TOKEN']['eodhd_token']
-    url = f'https://eodhd.com/api/news?s={symbol}.{exchange_id}&from={from_date}&to={to_date}&offset={offset}&limit={limit}&api_token={token}&fmt=csv'
-    data = requests.get(url)
+
+    # Convert from_date and to_date to datetime objects
+    from_date_dt = datetime.datetime.fromtimestamp(float(from_date))
+    to_date_dt = datetime.datetime.fromtimestamp(float(to_date))
+
+    all_news = []
+
+    # Calculate the number of months to iterate through
+    num_months = (to_date_dt.year - from_date_dt.year) * 12 + to_date_dt.month - from_date_dt.month + 1
+
+    # Prepare date ranges for each month
+    date_ranges = []
+    current_date_dt = from_date_dt
+    while current_date_dt <= to_date_dt:
+        next_month_dt = (current_date_dt.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)
+        end_date_dt = min(next_month_dt, to_date_dt)
+        date_ranges.append((current_date_dt.strftime('%Y-%m-%d'), end_date_dt.strftime('%Y-%m-%d')))
+        current_date_dt = next_month_dt
+
+    # Fetch news data using multithreading
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(fetch_news_for_period, symbol, exchange_id, start, end, offset, limit, token)
+            for start, end in date_ranges
+        ]
+
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching historical news"):
+            news_data = future.result()
+            if news_data:
+                all_news.extend(news_data)
+
+    # Sort news by timestamp
+    all_news.sort(key=lambda x: x['date'])
+
+    # Save data if requested
     if save:
-        # write_json(data, f'news_{symbol.replace(".", "_")}_{from_date}_{to_date}.json', 'data/json_eodhd')
-        os.makedirs('../data/csv_eodhd/news/', exist_ok=True)
-        # csv save
-        if data.status_code == 200:
-            import datetime
-            # turn to yyyy-mm-dd
-            f_d = datetime.datetime.fromtimestamp(float(from_date)).strftime('%Y-%m-%d')
-            t_d = datetime.datetime.fromtimestamp(float(to_date)).strftime('%Y-%m-%d')
-            with open(f'../data/csv_eodhd/news/news_{symbol.replace(".", "_")}_{f_d}_{t_d}.csv',
-                      'wb') as f:
-                f.write(data.content)
-                print(f'{symbol} historical news written')
-    return data
+        os.makedirs('../data/json_eodhd/news/', exist_ok=True)
+        f_d = from_date_dt.strftime('%Y-%m-%d')
+        t_d = to_date_dt.strftime('%Y-%m-%d')
+        with open(f'../data/json_eodhd/news/news_{symbol.replace(".", "_")}_{f_d}_{t_d}.json', 'w') as f:
+            json.dump(all_news, f, indent=4)
+            print(f'{symbol} historical news written')
+
+    return all_news
 
 
 def test_historical_news():
