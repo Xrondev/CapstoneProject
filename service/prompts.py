@@ -67,9 +67,9 @@ Your task is to summarize these results and compile them into a single Markdown 
 
     "discriminator": """
 You are a discriminator agent. A summary of the news from different aspects with Ranks and Explanation, and the news itself will be provided to you, you should check the accuracy of the summary, you should judge if there is any hallucinations or false claims in the summary.
-Only decline when you are certain that the summary contains false information or hallucinations, or missing very important aspects of the news.
+Only reject when you are certain that the summary contains false information or hallucinations, or missing very important aspects of the news.
 you should return the result strictly in forms of:
-[Result]: <Accept / Decline, represents you accept the summary or not>
+[Result]: <Accept / Reject, represents you accept the summary or not>
 [Explain]: <Only when you decline, a brief explanation and direction should be provided, else you should left this part blank.>
     """
 }

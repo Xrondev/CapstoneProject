@@ -141,7 +141,7 @@ class TaskProcessor:
                 result5 = await self.send_to_node(node_task5)
                 self.results['result5'] = result5['response']['content']
 
-                if "[Result]: Decline" in self.results['result5'] and self.attempt < MAX_RETRIES:
+                if "[Result]: Reject" in self.results['result5'] and self.attempt < MAX_RETRIES:
                     print("Result 5 indicates decline, retrying task...")
                     self.retry_prompt = '[Retry Prompt] '+self.results['result5']
                     self.attempt += 1
