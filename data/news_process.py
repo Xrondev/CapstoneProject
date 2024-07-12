@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 
 # Only the following stock codes will be processed
@@ -7,8 +8,8 @@ process_stock = ['AAPL', 'META', 'MSFT', 'NVDA', 'AMZN']
 
 news_folder = './json_eodhd/filtered/'
 
-# Define the URL of the sentiment analysis service
-service_url = 'https://u11820-9171-93a7ec0f.westc.gpuhub.com:8443/chat'
+# Define the URL of the orchestra node
+service_url = 'http://localhost:8000'
 
 
 def get_news_json_file(folder: str):
@@ -26,78 +27,49 @@ def read_json(filename: str):
         return data
 
 
-def analyze_sentiment(target: str, content: str):
+def analyze(target: str, content: str, current_task_id: int, total_task_id: int):
     headers = {
         'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
         'Content-Type': 'application/json'
     }
-    response = requests.request('POST', service_url, headers=headers, data=json.dumps({
-        "message": {
-            "role": "user",
-            "content": f"[Target]{target} \n [NewsContent] {content}"
-        }
-    }))
-    return response.json()
+    attempt = 0
+    while attempt < 3:
+        response = requests.post(f'{service_url}/process', headers=headers, json={
+            "message": {
+                "role": "user",
+                "content": f"[Target]{target} \n [NewsContent] {content}"
+            },
+            "task_id": f"{current_task_id}/{total_task_id}",
+            "target": target
+        })
+        if response.status_code == 200:
+            return
+        attempt += 1
+        time.sleep(5)
 
 
-def verify_response(response):
-    if response.get("functionality") == "analysis" and "response" in response:
-        response_content = response['response'].get("content", "")
-        if response_content.startswith("[RANK]:") and "[Explain]:" in response_content:
-            try:
-                rank_str = response_content.split("[RANK]:")[1].split("\n")[0].strip()
-                rank = float(rank_str)
-                explanation = response_content.split("[Explain]:")[1].strip()
-                if -1 <= rank <= 1 and isinstance(explanation, str):
-                    return rank, explanation, None
-            except (ValueError, IndexError):
-                return None, None, 'rank or explanation not detected in response'
-    elif response.get("detail") is not None:
-        return None, None, 'Server error' + response.get('detail')
-    else:
-        return None, None, 'Request error' + response.get('detail')
+def check_queue_size():
+    response = requests.get(f'{service_url}/queue_size')
+    queue_data = response.json()
+    queue_size = queue_data.get('queue_size', 0)
+    print(f'Queue size: {queue_size}')
+    return queue_size
 
 
-def process_news_data(target, news_data, output_file):
-    error_counter = 0
-    for item in news_data:
-        # Every historical news item
-        # print(item)
+def process_news_data(target, news_data):
+    total_task_count = len(news_data)
+    for idx, item in enumerate(news_data):
         content = item.get('content', '')
         if content:
-            response = analyze_sentiment(target=target, content=content)
-
-            rank, explanation, error = verify_response(response)
-            if error is None:
-                result = {
-                    "date": item.get('date'),
-                    "title": item.get('title'),
-                    "rank": rank,
-                    "explanation": explanation,
-                    "response": response
-                }
-            else:
-                error_counter += 1
-                result = {
-                    "date": item.get('date'),
-                    "title": item.get('title'),
-                    "info": error
-                }
-            save_result_to_file(result, output_file)  # Save after processing each item
-    print(f'ERROR Process counter for {target}: {error_counter} / {len(news_data)}')
-
-
-def save_result_to_file(result, output_file):
-    with open(output_file, 'a', encoding='utf-8') as file:
-        file.write(json.dumps(result, ensure_ascii=False) + '\n')
-
-
-def combine_results(output_file):
-    with open(output_file, 'r', encoding='utf-8') as file:
-        lines = file.readlines()
-    results = [json.loads(line) for line in lines]
-    with open(output_file, 'w', encoding='utf-8') as file:
-        json.dump(results, file, ensure_ascii=False, indent=4)
+            # Check queue size before processing a new item
+            while True:
+                queue_size = check_queue_size()
+                if queue_size <= 10:
+                    analyze(target, content, idx + 1, total_task_count)
+                    break
+                else:
+                    print('Waiting for queue size to drop...')
+                    time.sleep(5)
 
 
 def main():
@@ -109,10 +81,8 @@ def main():
 
     for filename in news_files:
         news_data = read_json(filename)
-        output_file = f'analysis_result_{filename.split("_")[2]}.json'
-        process_news_data(target=company_name_dict.get(filename.split('_')[2]), news_data=news_data,
-                          output_file=output_file)
-        combine_results(output_file)  # Combine results into a proper JSON array
+        target = company_name_dict.get(filename.split('_')[2], 'Unknown')
+        process_news_data(target, news_data)
 
 
 if __name__ == '__main__':

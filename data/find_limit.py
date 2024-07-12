@@ -2,7 +2,7 @@ import json
 
 import matplotlib.pyplot as plt
 
-from data.news_process import analyze_sentiment
+from data.news_process import analyze
 
 file_path = './json_eodhd/filtered/filtered-unique_news_AAPL_2020-10-21_2024-05-30.json'
 
@@ -16,7 +16,7 @@ print(len(content))
 def find_max_len():
     def is_processable(content, length):
         truncated_content = content[:length]
-        response = analyze_sentiment(target='Apple', content=truncated_content)
+        response = analyze(target='Apple', content=truncated_content)
         print(response)
         return response.get('detail') is None
 

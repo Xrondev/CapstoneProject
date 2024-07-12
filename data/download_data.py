@@ -12,8 +12,8 @@ from utils import read_config, from_json
 
 data_partition = {
     'price': False,
-    'news': True,
-    'fundamental': False,
+    'news': False,
+    'fundamental': True,
 }
 
 
