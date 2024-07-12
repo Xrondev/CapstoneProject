@@ -6,3 +6,7 @@
 /data/json_eodhd/
 *.json
 *.pyc
+/data/output.csv
+/src/model/.ipynb_checkpoints/
+/src/model/ckpts/
+/src/model/lightning_logs/
