@@ -11,15 +11,18 @@ import os
 
 # Configuration
 NODE_URLS = [
-    # "https://u11820-a131-5d3e6105.neimeng.seetacloud.com:6443",
-    "http://region-31.seetacloud.com:37099",
+    # "http://region-31.seetacloud.com:37099",
     "https://u11820-955b-de7d95e0.neimeng.seetacloud.com:6443",
-    "https://u11820-a131-14dac496.neimeng.seetacloud.com:6443"
+    # "https://u11820-a131-14dac496.neimeng.seetacloud.com:6443",
+    # "https://u11820-8622-a630f78f.neimeng.seetacloud.com:6443",
+    "https://u11820-9715-5624ff7c.neimeng.seetacloud.com:6443",
+    "http://region-31.seetacloud.com:59071"
 
 ]
 TASK_QUEUE = queue.Queue()
 TASK_TIMEOUT = 300  # 5 minutes
 MAX_RETRIES = 3  # Maximum retries for a task
+WORKER_COUNT = 5  # Number of worker tasks to run
 
 # Global state to track node status
 node_status = {url: "available" for url in NODE_URLS}
@@ -46,7 +49,6 @@ class NodeTask(BaseModel):
 
 async def list_node_statuses():
     async with status_lock:
-        # print(f"Node statuses: {node_status}")
         return node_status
 
 
@@ -76,7 +78,7 @@ class TaskProcessor:
         while True:
             tasks = [self.check_node_availability(url) for url in NODE_URLS]
             await asyncio.gather(*tasks)
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
 
     async def send_to_node(self, node_task, timeout=120, retry_count=0):
         start_time = time.time()
@@ -188,15 +190,18 @@ async def lifespan(app: FastAPI):
     # Start polling the node statuses
     loop = asyncio.get_event_loop()
     poll_task = loop.create_task(TaskProcessor(None).poll_node_statuses())
-    worker_task = loop.create_task(worker())
+
+    # Start worker tasks
+    worker_tasks = [loop.create_task(worker()) for _ in range(WORKER_COUNT)]
 
     yield
 
     # Cleanup
     poll_task.cancel()
     await poll_task
-    worker_task.cancel()
-    await worker_task
+    for worker_task in worker_tasks:
+        worker_task.cancel()
+        await worker_task
 
 
 app = FastAPI(lifespan=lifespan)
