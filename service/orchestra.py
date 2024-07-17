@@ -12,10 +12,10 @@ import os
 # Configuration
 NODE_URLS = [
     # "http://region-31.seetacloud.com:37099",
-    "https://u11820-955b-de7d95e0.neimeng.seetacloud.com:6443",
+    # "https://u11820-955b-de7d95e0.neimeng.seetacloud.com:6443",
     # "https://u11820-a131-14dac496.neimeng.seetacloud.com:6443",
-    # "https://u11820-8622-a630f78f.neimeng.seetacloud.com:6443",
-    "https://u11820-9715-5624ff7c.neimeng.seetacloud.com:6443",
+    "https://u11820-8622-a630f78f.neimeng.seetacloud.com:6443",
+    # "https://u11820-9715-5624ff7c.neimeng.seetacloud.com:6443",
     "http://region-31.seetacloud.com:59071"
 
 ]
@@ -78,7 +78,7 @@ class TaskProcessor:
         while True:
             tasks = [self.check_node_availability(url) for url in NODE_URLS]
             await asyncio.gather(*tasks)
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
     async def send_to_node(self, node_task, timeout=120, retry_count=0):
         start_time = time.time()

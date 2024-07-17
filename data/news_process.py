@@ -59,6 +59,11 @@ def check_queue_size():
 def process_news_data(target, news_data):
     total_task_count = len(news_data)
     for idx, item in enumerate(news_data):
+
+        # start from index 5000?
+        if idx < 5000:
+            continue
+
         content = item.get('content', '')
         if content:
             # Check queue size before processing a new item

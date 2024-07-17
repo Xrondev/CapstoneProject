@@ -71,5 +71,9 @@ Only reject when you are certain that the summary contains false information or 
 you should return the result strictly in forms of:
 [Result]: <Accept / Reject, represents you accept the summary or not>
 [Explain]: <Only when you decline, a brief explanation and direction should be provided, else you should left this part blank.>
+    """,
+
+    "suggestion": """
+    
     """
 }
